@@ -4,29 +4,23 @@ import { useActionState } from "react";
 import { signUp } from "@/app/auth/actions";
 import { SubmitButton } from "@/components/submit-button";
 import type { FormState } from "@/lib/form-state";
+import { resolveSiteOrigin } from "@/lib/site-origin";
 
 const initial: FormState = {};
 
 export function SignupForm() {
-  const [state, action] = useActionState(signUp, initial);
+  const [state, action] = useActionState(submitSignup, initial);
   if (state.confirmEmail) {
     return (
-      <div className="rounded-3xl border border-line bg-paper p-5" role="status">
+      <div className="rounded-3xl border border-moss/30 bg-paper p-5" role="status">
         <h2 className="font-display text-2xl">Check your email</h2>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          We sent a confirmation link. Open it on this device and you will land in onboarding. Then come back and sign
-          in if the link already confirmed the account.
-        </p>
+        <p className="mt-2 text-sm leading-6">Check your email to confirm your account.</p>
       </div>
     );
   }
   return (
     <form action={action} className="grid gap-4">
-      {state.error ? (
-        <p role="alert" className="rounded-2xl bg-white px-3 py-2 text-sm text-clay">
-          {state.error}
-        </p>
-      ) : null}
+      {state.error ? <AuthAlert>{state.error}</AuthAlert> : null}
       <label className="grid gap-1 text-sm font-medium" htmlFor="email">
         Email
         <input id="email" name="email" type="email" autoComplete="email" required className={fieldClass} />
@@ -55,9 +49,34 @@ export function SignupForm() {
           className={fieldClass}
         />
       </label>
-      <SubmitButton pendingLabel="Creating…">Create account</SubmitButton>
+      <SubmitButton pendingLabel="Creating account…">Create account</SubmitButton>
     </form>
   );
 }
 
+async function submitSignup(prev: FormState, formData: FormData) {
+  formData.set("origin", resolveSiteOrigin(window.location.origin) ?? window.location.origin);
+  try {
+    return await signUp(prev, formData);
+  } catch (err) {
+    rethrowNavigation(err);
+    return { error: err instanceof Error && err.message ? err.message : "Something went wrong. Please try again." };
+  }
+}
+
+function AuthAlert({ children }: { children: React.ReactNode }) {
+  return (
+    <p role="alert" className="rounded-2xl border border-clay bg-white px-3 py-3 text-sm font-medium text-clay">
+      {children}
+    </p>
+  );
+}
+
 const fieldClass = "min-h-11 w-full rounded-xl border border-line bg-white px-3 text-base";
+
+function rethrowNavigation(error: unknown) {
+  if (typeof error === "object" && error !== null && "digest" in error) {
+    const digest = String((error as { digest?: unknown }).digest ?? "");
+    if (digest.startsWith("NEXT_REDIRECT") || digest.startsWith("NEXT_HTTP_ERROR_FALLBACK")) throw error;
+  }
+}
