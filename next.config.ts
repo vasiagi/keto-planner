@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
   turbopack: {
     rules: {
       "*.css": {

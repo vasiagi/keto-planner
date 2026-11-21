@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { setMealEaten, setSteps, setWater } from "@/app/(app)/actions";
+import { ActionForm } from "@/components/action-form";
 import { FastingTimer } from "@/components/fasting-timer";
 import { SubmitButton } from "@/components/submit-button";
 import { requireUser } from "@/lib/auth";
@@ -93,7 +94,7 @@ async function LogContent({
             const recipe = logged?.recipe ?? planned.recipe;
             const eaten = logged?.eaten ?? false;
             return (
-              <form key={mealType} action={setMealEaten} className="rounded-2xl border border-line bg-paper p-3">
+              <ActionForm key={mealType} action={setMealEaten} className="rounded-2xl border border-line bg-paper p-3">
                 <input type="hidden" name="date" value={date} />
                 <input type="hidden" name="mealType" value={mealType} />
                 <input type="hidden" name="recipeId" value={recipe.id} />
@@ -112,7 +113,7 @@ async function LogContent({
                     {eaten ? "Eaten" : "Mark eaten"}
                   </button>
                 </div>
-              </form>
+              </ActionForm>
             );
           })
         )}
@@ -121,21 +122,21 @@ async function LogContent({
         <h2 className="font-display text-2xl">Water</h2>
         <p className="mt-1 text-sm text-muted">{water} oz logged. A common target is about 100 oz.</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <form action={setWater}>
+          <ActionForm action={setWater}>
             <input type="hidden" name="date" value={date} />
             <input type="hidden" name="water" value={Math.max(0, water - 8)} />
             <SubmitButton variant="secondary">Minus 8 oz</SubmitButton>
-          </form>
-          <form action={setWater}>
+          </ActionForm>
+          <ActionForm action={setWater}>
             <input type="hidden" name="date" value={date} />
             <input type="hidden" name="water" value={Math.min(400, water + 8)} />
             <SubmitButton variant="secondary">Plus 8 oz</SubmitButton>
-          </form>
+          </ActionForm>
         </div>
       </section>
       <section className="rounded-3xl border border-line bg-paper p-4">
         <h2 className="font-display text-2xl">Steps</h2>
-        <form action={setSteps} className="mt-3 flex flex-wrap items-end gap-2">
+        <ActionForm action={setSteps} className="mt-3 flex flex-wrap items-end gap-2">
           <input type="hidden" name="date" value={date} />
           <label className="grid gap-1 text-sm font-medium" htmlFor="steps">
             Steps today
@@ -150,7 +151,7 @@ async function LogContent({
             />
           </label>
           <SubmitButton variant="secondary">Save steps</SubmitButton>
-        </form>
+        </ActionForm>
       </section>
       <FastingTimer
         date={date}

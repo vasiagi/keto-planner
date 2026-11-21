@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Figtree } from "next/font/google";
 import { LocalDateSync } from "@/components/local-date";
+import { StaleActionReset } from "@/lib/stale-action";
 import "./globals.css";
 
 const display = Fraunces({
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${body.variable} h-full antialiased`}>
       <body className="min-h-full">
         <LocalDateSync />
+        <StaleActionReset />
         {children}
       </body>
     </html>
