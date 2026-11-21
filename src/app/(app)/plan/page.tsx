@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { generatePlan, swapMeal } from "@/app/(app)/actions";
+import { ActionForm } from "@/components/action-form";
 import { SubmitButton } from "@/components/submit-button";
 import { addDays, formatShort, isIsoDate, mondayOf, weekdayLabels } from "@/lib/dates";
 import { requireUser } from "@/lib/auth";
@@ -69,10 +70,10 @@ async function PlanContent({
           <Link href={`/plan?week=${addDays(week, 7)}`} className="inline-flex min-h-11 items-center rounded-full border border-line bg-white px-4 text-sm font-semibold">
             Next
           </Link>
-          <form action={generatePlan}>
+          <ActionForm action={generatePlan}>
             <input type="hidden" name="week" value={week} />
             <SubmitButton pendingLabel="Planning…">{data.plan ? "Regenerate" : "Build this week"}</SubmitButton>
-          </form>
+          </ActionForm>
         </div>
       </header>
       {notice ? (
@@ -105,7 +106,7 @@ async function PlanContent({
                         {item.recipe.netCarbsG} g net · {item.recipe.calories} kcal · {item.recipe.proteinG} p · {item.recipe.fatG} f
                       </p>
                       <p className="mt-2 text-sm leading-6">{item.recipe.instructions}</p>
-                      <form action={swapMeal} className="mt-3 flex flex-wrap items-center gap-2">
+                      <ActionForm action={swapMeal} className="mt-3 flex flex-wrap items-center gap-2">
                         <input type="hidden" name="itemId" value={item.id} />
                         <input type="hidden" name="week" value={week} />
                         <label className="sr-only" htmlFor={`swap-${item.id}`}>
@@ -121,7 +122,7 @@ async function PlanContent({
                         <SubmitButton variant="secondary" pendingLabel="Swapping…">
                           Swap
                         </SubmitButton>
-                      </form>
+                      </ActionForm>
                     </article>
                   );
                 })}

@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { signIn } from "@/app/auth/actions";
 import { SubmitButton } from "@/components/submit-button";
 import type { FormState } from "@/lib/form-state";
+import { callServerAction } from "@/lib/stale-action";
 
 const initial: FormState = {};
 
@@ -44,18 +45,10 @@ export function LoginForm({ confirmationFailed }: { confirmationFailed: boolean 
 
 async function submitSignIn(prev: FormState, formData: FormData) {
   try {
-    return await signIn(prev, formData);
+    return await callServerAction(() => signIn(prev, formData));
   } catch (err) {
-    rethrowNavigation(err);
     return { error: err instanceof Error && err.message ? err.message : "Something went wrong. Please try again." };
   }
 }
 
 const fieldClass = "min-h-11 w-full rounded-xl border border-line bg-white px-3 text-base";
-
-function rethrowNavigation(error: unknown) {
-  if (typeof error === "object" && error !== null && "digest" in error) {
-    const digest = String((error as { digest?: unknown }).digest ?? "");
-    if (digest.startsWith("NEXT_REDIRECT") || digest.startsWith("NEXT_HTTP_ERROR_FALLBACK")) throw error;
-  }
-}

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { logWeight } from "@/app/(app)/actions";
+import { ActionForm } from "@/components/action-form";
 import { SubmitButton } from "@/components/submit-button";
 import { requireUser } from "@/lib/auth";
 import { formatShort } from "@/lib/dates";
@@ -49,7 +50,7 @@ async function WeightContent({ searchParams }: { searchParams: Promise<{ notice?
         </p>
       ) : null}
       <WeightChart points={data.weights} goal={data.profile.goalWeightLb} />
-      <form action={logWeight} className="flex flex-wrap items-end gap-2 rounded-3xl border border-line bg-paper p-4">
+      <ActionForm action={logWeight} className="flex flex-wrap items-end gap-2 rounded-3xl border border-line bg-paper p-4">
         <label className="grid gap-1 text-sm font-medium" htmlFor="weight-date">
           Date
           <input id="weight-date" name="date" type="date" defaultValue={today} required className="min-h-11 rounded-xl border border-line bg-white px-3 text-base" />
@@ -59,7 +60,7 @@ async function WeightContent({ searchParams }: { searchParams: Promise<{ notice?
           <input id="weight" name="weight" type="number" min={70} max={700} step="0.1" required className="min-h-11 w-32 rounded-xl border border-line bg-white px-3 text-base" />
         </label>
         <SubmitButton>Log weight</SubmitButton>
-      </form>
+      </ActionForm>
       <section>
         <h2 className="font-display text-2xl">Every 10 lb</h2>
         <ul className="mt-3 flex flex-wrap gap-2">

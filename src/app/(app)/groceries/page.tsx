@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { toggleGrocery } from "@/app/(app)/actions";
+import { ActionForm } from "@/components/action-form";
 import { addDays, formatShort, isIsoDate, mondayOf } from "@/lib/dates";
 import { requireUser } from "@/lib/auth";
 import { formatQuantity, groceryKey } from "@/lib/grocery";
@@ -70,7 +71,7 @@ async function GroceriesContent({
             const checked = data.checks.get(groceryKey(line.name, line.unit)) === true;
             return (
               <li key={line.key}>
-                <form action={toggleGrocery}>
+                <ActionForm action={toggleGrocery}>
                   <input type="hidden" name="planId" value={data.plan?.id} />
                   <input type="hidden" name="week" value={week} />
                   <input type="hidden" name="itemKey" value={line.key} />
@@ -88,7 +89,7 @@ async function GroceriesContent({
                     </span>
                     <span className="capitalize">{line.name}</span>
                   </button>
-                </form>
+                </ActionForm>
               </li>
             );
           })}

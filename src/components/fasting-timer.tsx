@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { endFast, startFast } from "@/app/(app)/actions";
 import { SubmitButton } from "@/components/submit-button";
+import { bindServerAction } from "@/lib/stale-action";
+
+const stopFast = bindServerAction(endFast);
+const beginFast = bindServerAction(startFast);
 
 export function FastingTimer({
   date,
@@ -46,7 +50,7 @@ export function FastingTimer({
       )}
       <div className="mt-4 flex flex-wrap gap-2">
         {running ? (
-          <form action={endFast}>
+          <form action={stopFast}>
             <input type="hidden" name="date" value={date} />
             <SubmitButton variant="secondary" pendingLabel="Stopping…">
               End fast
@@ -54,7 +58,7 @@ export function FastingTimer({
           </form>
         ) : (
           [16, 18, 20].map((hours) => (
-            <form key={hours} action={startFast}>
+            <form key={hours} action={beginFast}>
               <input type="hidden" name="date" value={date} />
               <input type="hidden" name="hours" value={hours} />
               <SubmitButton variant="secondary" pendingLabel="Starting…">

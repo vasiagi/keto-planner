@@ -2,8 +2,8 @@ import { Suspense } from "react";
 import { headers } from "next/headers";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
-import { signOut } from "@/app/auth/actions";
 import { AppNav } from "@/components/nav-links";
+import { SignOutButton } from "@/components/sign-out-button";
 import { requireUser } from "@/lib/auth";
 import { getProfile } from "@/lib/queries";
 
@@ -16,11 +16,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-line bg-paper px-4 py-6 md:flex">
           <p className="font-display text-2xl text-moss-deep">Cedar</p>
           <AppNav className="mt-8 flex flex-1 flex-col gap-1" />
-          <form action={signOut}>
-            <button type="submit" className="min-h-11 rounded-full px-3 text-sm font-semibold text-moss">
-              Sign out
-            </button>
-          </form>
+          <SignOutButton />
         </aside>
         <div className="min-w-0 flex-1">
           <Suspense fallback={<main className="px-4 py-6 pb-28 md:px-8">Loading your kitchen…</main>}>

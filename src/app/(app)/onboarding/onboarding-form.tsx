@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { saveOnboarding } from "@/app/(app)/actions";
+import { callServerAction } from "@/lib/stale-action";
 import { SubmitButton } from "@/components/submit-button";
 import type { FormState } from "@/lib/form-state";
 import { formatWeekday } from "@/lib/dates";
@@ -36,7 +37,10 @@ export function OnboardingForm({
     dislikes: string;
   };
 }) {
-  const [state, action] = useActionState(saveOnboarding, initial);
+  const [state, action] = useActionState(
+    (prev: FormState, formData: FormData) => callServerAction(() => saveOnboarding(prev, formData)),
+    initial,
+  );
   const [currentWeight, setCurrentWeight] = useState(String(defaults.currentWeight));
   const [goalWeight, setGoalWeight] = useState(String(defaults.goalWeight));
   const [feet, setFeet] = useState(String(defaults.feet));

@@ -5,6 +5,7 @@ import { signUp } from "@/app/auth/actions";
 import { SubmitButton } from "@/components/submit-button";
 import type { FormState } from "@/lib/form-state";
 import { resolveSiteOrigin } from "@/lib/site-origin";
+import { callServerAction } from "@/lib/stale-action";
 
 const initial: FormState = {};
 
@@ -57,9 +58,8 @@ export function SignupForm() {
 async function submitSignup(prev: FormState, formData: FormData) {
   formData.set("origin", resolveSiteOrigin(window.location.origin) ?? window.location.origin);
   try {
-    return await signUp(prev, formData);
+    return await callServerAction(() => signUp(prev, formData));
   } catch (err) {
-    rethrowNavigation(err);
     return { error: err instanceof Error && err.message ? err.message : "Something went wrong. Please try again." };
   }
 }
@@ -73,10 +73,3 @@ function AuthAlert({ children }: { children: React.ReactNode }) {
 }
 
 const fieldClass = "min-h-11 w-full rounded-xl border border-line bg-white px-3 text-base";
-
-function rethrowNavigation(error: unknown) {
-  if (typeof error === "object" && error !== null && "digest" in error) {
-    const digest = String((error as { digest?: unknown }).digest ?? "");
-    if (digest.startsWith("NEXT_REDIRECT") || digest.startsWith("NEXT_HTTP_ERROR_FALLBACK")) throw error;
-  }
-}
