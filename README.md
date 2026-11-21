@@ -49,7 +49,7 @@ In Authentication → URL configuration:
   - `https://your-app.vercel.app/auth/callback`
   - `https://*.vercel.app/auth/callback` if you want preview deployments to confirm email too
 
-Signup sends people back to `/auth/callback`, which exchanges the confirmation code for a session and then opens `/onboarding`. If email confirmation is enabled, the app tells them to check their email and does not sign them in until they use the link. The same route also accepts `token_hash` and `type` when the email template uses that form.
+Signup sends people back to `/auth/callback`, which exchanges the confirmation code for a session and then opens `/onboarding`. The link origin is `NEXT_PUBLIC_SITE_URL` when that variable is set, otherwise the browser origin. Nothing in the app hard-codes localhost. If email confirmation is enabled, signup shows “Check your email to confirm your account” and does not sign them in until they use the link. If confirmation is off, signup returns a session and goes straight to onboarding. The callback also accepts `token_hash` and `type` when the email template uses that form. Auth and data errors are written with `log_app_error` (see `supabase/migrations/20261121045900_error_logs.sql`).
 
 A trigger on `auth.users` inserts a `profiles` row at signup. Onboarding inserts one if that row is missing.
 

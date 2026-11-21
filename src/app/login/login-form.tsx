@@ -8,16 +8,16 @@ import type { FormState } from "@/lib/form-state";
 const initial: FormState = {};
 
 export function LoginForm({ confirmationFailed }: { confirmationFailed: boolean }) {
-  const [state, action] = useActionState(signIn, initial);
+  const [state, action] = useActionState(submitSignIn, initial);
   return (
     <form action={action} className="grid gap-4">
       {confirmationFailed ? (
-        <p role="alert" className="rounded-2xl bg-white px-3 py-2 text-sm text-clay">
+        <p role="alert" className="rounded-2xl border border-clay bg-white px-3 py-3 text-sm font-medium text-clay">
           That confirmation link is invalid or expired. Sign in if you already confirmed, or create the account again.
         </p>
       ) : null}
       {state.error ? (
-        <p role="alert" className="rounded-2xl bg-white px-3 py-2 text-sm text-clay">
+        <p role="alert" className="rounded-2xl border border-clay bg-white px-3 py-3 text-sm font-medium text-clay">
           {state.error}
         </p>
       ) : null}
@@ -37,9 +37,25 @@ export function LoginForm({ confirmationFailed }: { confirmationFailed: boolean 
           className={fieldClass}
         />
       </label>
-      <SubmitButton>Sign in</SubmitButton>
+      <SubmitButton pendingLabel="Signing in…">Sign in</SubmitButton>
     </form>
   );
 }
 
+async function submitSignIn(prev: FormState, formData: FormData) {
+  try {
+    return await signIn(prev, formData);
+  } catch (err) {
+    rethrowNavigation(err);
+    return { error: err instanceof Error && err.message ? err.message : "Something went wrong. Please try again." };
+  }
+}
+
 const fieldClass = "min-h-11 w-full rounded-xl border border-line bg-white px-3 text-base";
+
+function rethrowNavigation(error: unknown) {
+  if (typeof error === "object" && error !== null && "digest" in error) {
+    const digest = String((error as { digest?: unknown }).digest ?? "");
+    if (digest.startsWith("NEXT_REDIRECT") || digest.startsWith("NEXT_HTTP_ERROR_FALLBACK")) throw error;
+  }
+}

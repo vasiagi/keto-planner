@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { logError } from "@/lib/log-error";
 import { isIsoDate, mondayOf } from "@/lib/dates";
 import type { FormState } from "@/lib/form-state";
 import { generateWeekPlan, isAllergen, isMealType, recipeAllowed } from "@/lib/meal-plan";
@@ -83,13 +84,25 @@ export async function saveOnboarding(_prev: FormState, formData: FormData): Prom
       onboarded_at: profile.onboardedAt ?? new Date().toISOString(),
     })
     .eq("id", userId);
-  if (error) return { error: "Could not save your profile." };
+  if (error) {
+    await logError({ source: "onboarding", message: error.message, code: error.code, path: "/onboarding", email });
+    return { error: "Could not save your profile." };
+  }
 
   const { error: weightError } = await supabase.from("weight_logs").upsert(
     { logged_on: today, weight_lb: currentWeight },
     { onConflict: "user_id,logged_on" },
   );
-  if (weightError) return { error: "Profile saved, but the starting weight did not log. Add it on the weight page." };
+  if (weightError) {
+    await logError({
+      source: "onboarding",
+      message: weightError.message,
+      code: weightError.code,
+      path: "/onboarding",
+      email,
+    });
+    return { error: "Profile saved, but the starting weight did not log. Add it on the weight page." };
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/onboarding");
@@ -122,16 +135,16 @@ export async function generatePlan(formData: FormData) {
     .eq("user_id", userId)
     .eq("week_start", week)
     .maybeSingle();
-  if (existingError) redirect(notice(week, "Could not read the current plan."));
+  if (existingError) await fail("meal-plan", existingError, "/plan", notice(week, "Could not read the current plan."));
 
   let planId = asId(existing?.id);
   if (planId == null) {
     const { data, error } = await supabase.from("meal_plans").insert({ week_start: week }).select("id").single();
-    if (error) redirect(notice(week, "Could not create the plan."));
+    if (error) await fail("meal-plan", error, "/plan", notice(week, "Could not create the plan."));
     planId = asId(data?.id);
   } else {
     const { error } = await supabase.from("meal_plan_items").delete().eq("meal_plan_id", planId);
-    if (error) redirect(notice(week, "Could not replace the current plan."));
+    if (error) await fail("meal-plan", error, "/plan", notice(week, "Could not replace the current plan."));
   }
   if (planId == null) redirect(notice(week, "Could not create the plan."));
 
@@ -143,7 +156,7 @@ export async function generatePlan(formData: FormData) {
       recipe_id: item.recipeId,
     })),
   );
-  if (error) redirect(notice(week, "Could not save the meals."));
+  if (error) await fail("meal-plan", error, "/plan", notice(week, "Could not save the meals."));
   revalidatePath("/plan");
   revalidatePath("/groceries");
   revalidatePath("/log");
@@ -166,7 +179,8 @@ export async function swapMeal(formData: FormData) {
     .eq("id", itemId)
     .eq("user_id", userId)
     .maybeSingle();
-  if (itemError || !item) redirect(notice(week, "That meal is not on your plan."));
+  if (itemError) await fail("meal-plan", itemError, "/plan", notice(week, "That meal is not on your plan."));
+  if (!item) redirect(notice(week, "That meal is not on your plan."));
 
   const recipes = await listRecipes(supabase);
   const recipe = recipes.find((entry) => entry.id === recipeId);
@@ -191,7 +205,7 @@ export async function swapMeal(formData: FormData) {
   }
 
   const { error } = await supabase.from("meal_plan_items").update({ recipe_id: recipeId }).eq("id", itemId);
-  if (error) redirect(notice(week, "Could not swap that meal."));
+  if (error) await fail("meal-plan", error, "/plan", notice(week, "Could not swap that meal."));
   revalidatePath("/plan");
   revalidatePath("/groceries");
   revalidatePath("/log");
@@ -209,7 +223,9 @@ export async function toggleGrocery(formData: FormData) {
     { meal_plan_id: planId, item_key: itemKey, checked },
     { onConflict: "meal_plan_id,item_key" },
   );
-  if (error) redirect(`/groceries?week=${week}&notice=${encodeURIComponent("Could not update that item.")}`);
+  if (error) {
+    await fail("grocery", error, "/groceries", `/groceries?week=${week}&notice=${encodeURIComponent("Could not update that item.")}`);
+  }
   revalidatePath("/groceries");
   redirect(`/groceries?week=${week}`);
 }
@@ -225,7 +241,9 @@ export async function setMealEaten(formData: FormData) {
     { log_date: date, meal_type: mealType, recipe_id: recipeId, eaten },
     { onConflict: "user_id,log_date,meal_type" },
   );
-  if (error) redirect(`/log?date=${date}&notice=${encodeURIComponent("Could not update that meal.")}`);
+  if (error) {
+    await fail("daily-log", error, "/log", `/log?date=${date}&notice=${encodeURIComponent("Could not update that meal.")}`);
+  }
   revalidatePath("/log");
   revalidatePath("/dashboard");
   redirect(`/log?date=${date}`);
@@ -239,7 +257,7 @@ export async function setWater(formData: FormData) {
     { log_date: date, water_oz: Math.round(water) },
     { onConflict: "user_id,log_date" },
   );
-  if (error) redirect(`/log?date=${date}&notice=${encodeURIComponent("Could not save water.")}`);
+  if (error) await fail("daily-log", error, "/log", `/log?date=${date}&notice=${encodeURIComponent("Could not save water.")}`);
   revalidatePath("/log");
   revalidatePath("/dashboard");
   redirect(`/log?date=${date}`);
@@ -256,7 +274,7 @@ export async function setSteps(formData: FormData) {
     { log_date: date, steps: Math.round(steps) },
     { onConflict: "user_id,log_date" },
   );
-  if (error) redirect(`/log?date=${date}&notice=${encodeURIComponent("Could not save steps.")}`);
+  if (error) await fail("daily-log", error, "/log", `/log?date=${date}&notice=${encodeURIComponent("Could not save steps.")}`);
   revalidatePath("/log");
   revalidatePath("/dashboard");
   redirect(`/log?date=${date}`);
@@ -276,7 +294,7 @@ export async function startFast(formData: FormData) {
     },
     { onConflict: "user_id,log_date" },
   );
-  if (error) redirect(`/log?date=${date}&notice=${encodeURIComponent("Could not start the timer.")}`);
+  if (error) await fail("daily-log", error, "/log", `/log?date=${date}&notice=${encodeURIComponent("Could not start the timer.")}`);
   revalidatePath("/log");
   redirect(`/log?date=${date}`);
 }
@@ -288,7 +306,7 @@ export async function endFast(formData: FormData) {
     .from("daily_logs")
     .update({ fast_ended_at: new Date().toISOString() })
     .eq("log_date", date);
-  if (error) redirect(`/log?date=${date}&notice=${encodeURIComponent("Could not stop the timer.")}`);
+  if (error) await fail("daily-log", error, "/log", `/log?date=${date}&notice=${encodeURIComponent("Could not stop the timer.")}`);
   revalidatePath("/log");
   redirect(`/log?date=${date}`);
 }
@@ -305,7 +323,7 @@ export async function logWeight(formData: FormData) {
     { logged_on: date, weight_lb: Math.round(weight * 10) / 10 },
     { onConflict: "user_id,logged_on" },
   );
-  if (error) redirect(`/weight?notice=${encodeURIComponent("Could not save that weight.")}`);
+  if (error) await fail("weight", error, "/weight", `/weight?notice=${encodeURIComponent("Could not save that weight.")}`);
   revalidatePath("/weight");
   revalidatePath("/dashboard");
   redirect("/weight");
@@ -336,4 +354,9 @@ function clamp(value: number, min: number, max: number) {
 
 function notice(week: string, message: string) {
   return `/plan?week=${week}&notice=${encodeURIComponent(message)}`;
+}
+
+async function fail(source: string, error: { message: string; code?: string }, path: string, location: string): Promise<never> {
+  await logError({ source, message: error.message, code: error.code, path });
+  redirect(location);
 }

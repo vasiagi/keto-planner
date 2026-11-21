@@ -21,6 +21,7 @@ export function SubmitButton({
     <button
       type="submit"
       disabled={pending}
+      aria-busy={pending}
       className={`inline-flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-semibold disabled:opacity-60 ${styles}`}
     >
       {pending ? pendingLabel : children}
